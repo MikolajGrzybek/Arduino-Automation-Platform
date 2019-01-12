@@ -1,6 +1,8 @@
 /*
     Zrobił to Grzybek żeby nie oblać z pneumatyki bo nie chciało mu się rysować tych schematów...
+    @2019
 */
+
 //załączenie niezbędnych bibliotek
 #include <SoftwareSerial.h>
 #include <NewPing.h>
