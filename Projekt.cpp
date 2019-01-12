@@ -70,14 +70,16 @@ void setup() {
 
 void loop() {
 
- if(sterowanie = true)
- {
-    automatyka();
- }
- else if (sterowanie = false)
- {
-    reczne();
- }
+    pomiary();
+
+    if(sterowanie = true)
+    {
+        automatyka();
+    }
+    else if (sterowanie = false)
+    {
+        reczne();
+    }
  
  
   
@@ -85,21 +87,12 @@ void loop() {
   //Serial1.println(state);
 }
 
-void automatyka()
+void pomiary()
 {
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych i włączenie odpowiednich cewek
 
     //Światło
     light_intensity = analogRead(A0); //Odczyt natężenia światła z czujnika PT550 wpiętego do A0
-
-        if (light_intensity >= 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
-        {
-            digitalWrite(K1, HIGH);
-        }
-        else
-        {
-            digitalWrite(K1, LOW);
-        }
 
     //Temperatura i Wilgotność
     int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
@@ -109,6 +102,22 @@ void automatyka()
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
 
+    
+        
+
+}
+//Sterowanie automatyczne (bez użycia aplikacji), z uwzględnieniem pomiarów z czujników
+void automatyka()
+{
+    //Załączanie żarówki
+    if (light_intensity >= 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
+        {
+            digitalWrite(K1, HIGH);
+        }
+        else if (light_intensity < 700)
+        {
+            digitalWrite(K1, LOW);
+        }
 }
 //Funkcja ręcznego załączania cewek
 void reczne()
