@@ -51,7 +51,8 @@ int state;
 
 boolean sterowanie;
 
-void setup() {                
+void setup() 
+{                
   pinMode(K1, OUTPUT); //zdefiniowanie I/O 3..10 cyfrowych jako wyjścia
   pinMode(K2, OUTPUT);
   pinMode(K3, OUTPUT);
@@ -61,7 +62,6 @@ void setup() {
   pinMode(K7, OUTPUT);
   pinMode(K8, OUTPUT);
   
- 
   Serial1.begin(9600);
 
  //dht.setup(DHT11_PIN);
@@ -69,18 +69,23 @@ void setup() {
   }
 
 
-void loop() {
+void loop() 
+{
+  //Odczyt danych z bluetooth
   state = Serial1.read();
-  if(state == '1')
+ 
+  //Wybór trybu pracy
+  if(state == '1') 
   {
     sterowanie = true;
   }
+  
   else if (state == '2')
   {
     sterowanie = false;
   }
 
-
+//wykonanie funkcji dla odpowiednich trybów pracy
 if(sterowanie == true)
 {
     automatyka();
@@ -91,7 +96,7 @@ else if (sterowanie == false)
  }
   //Na potrzeby debugowania
   //Serial1.println(sterowanie);
- delay(100);
+delay(100);
 }
 
 void automatyka()
@@ -121,10 +126,10 @@ void automatyka()
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
     
-    
     delay(1000);
 
 }
+
 //Funkcja ręcznego załączania cewek
 void reczne()
 {
