@@ -6,7 +6,7 @@
 //załączenie niezbędnych bibliotek
 #include <SoftwareSerial.h>
 #include <NewPing.h>
-#include <DHT.h>
+//#include <DHT.h>
 
 //Zdefiniowanie pinów RX i TX
 SoftwareSerial mySerial(1, 0); // RX, TX
@@ -22,8 +22,8 @@ SoftwareSerial mySerial(1, 0); // RX, TX
     const int K8=10;
 
 //czujniki cyfrowe S1...S4 wpięte do wejść cryfowycj arduino nr.:2, 11...13
-    const int DHT11_PIN=2; //Czujnik temperatury i wilgotności DHT11
-    const int Buzz=11; //Buzzer
+    //const int DHT11_PIN=2; //Czujnik temperatury i wilgotności DHT11
+    const int S2=11;
     const int Trig=12; //Czujnik ultradźwiękowy HC-SR04 pin trig
     const int Echo=13; //Czujnik ultradźwiękowy HC-SR04 pin echo
     
@@ -34,27 +34,6 @@ SoftwareSerial mySerial(1, 0); // RX, TX
     const int SA4=A3;
     const int SA5=A4;
     const int SA6=A5;
-
-//zdefiniowanie zmiennych do piosenki granej prez Buzzer
-    const int c = 261;
-    const int d = 294;
-    const int e = 329;
-    const int f = 349;
-    const int g = 391;
-    const int gS = 415;
-    const int a = 440;
-    const int aS = 455;
-    const int b = 466;
-    const int cH = 523;
-    const int cSH = 554;
-    const int dH = 587;
-    const int dSH = 622;
-    const int eH = 659;
-    const int fH = 698;
-    const int fSH = 740;
-    const int gH = 784;
-    const int gSH = 830;
-    const int aH = 880;
     
 //zdefiniowanie zmiennej 'light_intensity', w której przetrzymywana jest informacja o natężeniu światła
     int light_intensity=0;
@@ -65,7 +44,7 @@ SoftwareSerial mySerial(1, 0); // RX, TX
     int distance=0;
 
 //Konfiguracja czujnika temperatury i wilgotności DHT11
-DHT dht;
+//DHT dht;
 
 //zdefiniowanie zmiennej, która jest wysyłana poprzez bluetooth
 int state;
@@ -81,80 +60,76 @@ void setup() {
   pinMode(K6, OUTPUT);
   pinMode(K7, OUTPUT);
   pinMode(K8, OUTPUT);
-
-  pinMode(Buzz, OUTPUT);
-
+  
+ 
   Serial1.begin(9600);
 
-  dht.setup(DHT11_PIN);
+ //dht.setup(DHT11_PIN);
+ sterowanie = true;
   }
 
 
 void loop() {
-    
-    send();
-    pomiary();
+  state = Serial1.read();
+  if(state == '1')
+  {
+    sterowanie = true;
+  }
+  else if (state == '2')
+  {
+    sterowanie = false;
+  }
 
-    if(sterowanie = true)
-    {
-        automatyka();
-    }
-    else if (sterowanie = false)
-    {
-        reczne();
-    }
-  
 
-  //For debugging purpose
-  //Serial1.println(state);
-}
-
-void send()
+if(sterowanie == true)
 {
-    Serial1.println(light_intensity);
-    Serial1.println(wilgotnosc);
-    Serial1.println(temperatura);
-    Serial1.println(distance);
-
+    automatyka();
 }
-void pomiary()
+else if (sterowanie == false)
+ {
+     reczne();
+ }
+  //Na potrzeby debugowania
+  //Serial1.println(sterowanie);
+ delay(100);
+}
+
+void automatyka()
 {
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych i włączenie odpowiednich cewek
 
     //Światło
     light_intensity = analogRead(A0); //Odczyt natężenia światła z czujnika PT550 wpiętego do A0
 
+        if (light_intensity >= 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
+        {
+            digitalWrite(K1, HIGH);
+            Serial1.println("Dziala automat");
+        }
+        else
+        {
+            digitalWrite(K1, LOW);
+            Serial1.println("Dziala automat");
+        }
+        
+        delay(200);
     //Temperatura i Wilgotność
-    int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
-    int temperatura = dht.getTemperature(); //Pobranie informacji o temperaturze
+    //int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
+    //int temperatura = dht.getTemperature(); //Pobranie informacji o temperaturze
 
     //Odległość
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
-
     
-        
+    
+    delay(1000);
 
-}
-//Sterowanie automatyczne (bez użycia aplikacji), z uwzględnieniem pomiarów z czujników
-void automatyka()
-{
-    //Załączanie żarówki
-    if (light_intensity >= 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
-        {
-            digitalWrite(K1, HIGH);
-        }
-        else if (light_intensity < 700)
-        {
-            digitalWrite(K1, LOW);
-        }
 }
 //Funkcja ręcznego załączania cewek
 void reczne()
 {
-    if(Serial1.available() > 0){     
-      state = Serial1.read();}
-  
+  Serial1.println("Działa reczne");
+   
   switch(state)
   {
     case 'a': digitalWrite(K1, LOW); break;
@@ -184,116 +159,3 @@ void reczne()
     default: break;
   }
 }
-
-/*void beep(int note, int duration)
-{
-  //Play tone on buzzerPin
-  tone(buzzerPin, note, duration);
- 
-  //Play different LED depending on value of 'counter'
-  if(counter % 2 == 0)
-  {
-    digitalWrite(ledPin1, HIGH);
-    delay(duration);
-    digitalWrite(ledPin1, LOW);
-  }else
-  {
-    digitalWrite(ledPin2, HIGH);
-    delay(duration);
-    digitalWrite(ledPin2, LOW);
-  }
- 
-  //Stop tone on buzzerPin
-  noTone(buzzerPin);
- 
-  delay(50);
- 
-  //Increment counter
-  counter++;
-}
-
-void firstSection()
-{
-  beep(a, 500);
-  beep(a, 500);    
-  beep(a, 500);
-  beep(f, 350);
-  beep(cH, 150);  
-  beep(a, 500);
-  beep(f, 350);
-  beep(cH, 150);
-  beep(a, 650);
- 
-  delay(500);
- 
-  beep(eH, 500);
-  beep(eH, 500);
-  beep(eH, 500);  
-  beep(fH, 350);
-  beep(cH, 150);
-  beep(gS, 500);
-  beep(f, 350);
-  beep(cH, 150);
-  beep(a, 650);
- 
-  delay(500);
-}
- 
-void secondSection()
-{
-  beep(aH, 500);
-  beep(a, 300);
-  beep(a, 150);
-  beep(aH, 500);
-  beep(gSH, 325);
-  beep(gH, 175);
-  beep(fSH, 125);
-  beep(fH, 125);    
-  beep(fSH, 250);
- 
-  delay(325);
- 
-  beep(aS, 250);
-  beep(dSH, 500);
-  beep(dH, 325);  
-  beep(cSH, 175);  
-  beep(cH, 125);  
-  beep(b, 125);  
-  beep(cH, 250);  
- 
-  delay(350);
-}
-  
-  //Play first section
-  //firstSection();
- 
-  //Play second section
- // secondSection();
- 
-  //Variant 1
-  //beep(f, 250);  
-  beep(gS, 500);  
-  beep(f, 350);  
-  beep(a, 125);
-  beep(cH, 500);
-  beep(a, 375);  
-  beep(cH, 125);
-  beep(eH, 650);
- 
-  delay(500);
- 
-  //Repeat second section
-  secondSection();
- 
-  //Variant 2
-  beep(f, 250);  
-  beep(gS, 500);  
-  beep(f, 375);  
-  beep(cH, 125);
-  beep(a, 500);  
-  beep(f, 375);  
-  beep(cH, 125);
-  beep(a, 650);  
- 
-  delay(650);
-  */
