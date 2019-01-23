@@ -1,21 +1,22 @@
 /*
     Zrobił to Grzybek żeby nie oblać z pneumatyki bo nie chciało mu się rysować tych schematów...
-    @2019
+    A.D 2019
 */
 
 //załączenie niezbędnych bibliotek
 #include <SoftwareSerial.h>
 #include <NewPing.h>
-//#include <DHT.h>
+#include <DHT.h>
 
+#define DHT11_PIN 6
 //Zdefiniowanie pinów RX i TX
 SoftwareSerial mySerial(1, 0); // RX, TX
 
 //cewka K1...K8, której sterowanie wpięte jest do wyjścia cyfrowego arduino nr.: 3...10
     const int K1=3; //lampa
     const int K2=4; //brama
-    const int K3=5;
-    const int K4=6;
+    const int K3=5; //klimatyzacja
+    //const int K4=6;
     const int K5=7;
     const int K6=8;
     const int K7=9;
@@ -35,8 +36,8 @@ SoftwareSerial mySerial(1, 0); // RX, TX
     const int SA5=A4;
     const int SA6=A5;
 
-//zdefiniowanie zmiennej 'krańcówka' w której jest przetrzymowana informacja o tym czy brama otworzyła się do końca
-int limit_sensor=0;
+//zdefiniowanie zmiennej 'krańcówki' w której jest przetrzymowana informacja o tym czy brama otworzyła się do końca
+    int limit_sensor=0;
 //zdefiniowanie zmiennej 'light_intensity', w której przetrzymywana jest informacja o natężeniu światła
     int light_intensity=0;
 
@@ -46,7 +47,7 @@ int limit_sensor=0;
     int distance=0;
 
 //Konfiguracja czujnika temperatury i wilgotności DHT11
-//DHT dht;
+DHT dht;
 
 //zdefiniowanie zmiennej, która jest wysyłana poprzez bluetooth
 int state;
@@ -58,7 +59,7 @@ void setup()
   pinMode(K1, OUTPUT); //zdefiniowanie I/O 3..10 cyfrowych jako wyjścia
   pinMode(K2, OUTPUT);
   pinMode(K3, OUTPUT);
-  pinMode(K4, OUTPUT);
+//  pinMode(K4, OUTPUT);
   pinMode(K5, OUTPUT);
   pinMode(K6, OUTPUT);
   pinMode(K7, OUTPUT);
@@ -66,7 +67,7 @@ void setup()
   
   Serial1.begin(9600);
 
- //dht.setup(DHT11_PIN);
+ dht.setup(DHT11_PIN);
  sterowanie = true;
   }
 
@@ -103,14 +104,24 @@ delay(100);
 
 void automatyka()
 {
-    //Na potrzeby debugowania
     Serial1.println("Dziala automat");
+    
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych i włączenie odpowiednich cewek
+    //Odległość
+    unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
+    distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
+    limit_sensor = analogRead(A1);
+    //Światło
+    light_intensity = analogRead(A0); //Odczyt natężenia światła z czujnika PT550 wpiętego do A0
+    //temperatura 
+    int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
+    int temperatura = dht.getTemperature(); //Pobranie informacji o temperaturze
+
+
+    //Automatyczne wykonanie aktywności na podstawie pomiarów z czujników
 
     //Lampa
-    light_intensity = analogRead(A0); //Odczyt natężenia światła z czujnika PT550 wpiętego do A0
-
-     if (light_intensity < 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
+    if (light_intensity < 700) //rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
      {
          digitalWrite(K1, HIGH);
          Serial1.println("Zaświecono lampę");
@@ -122,16 +133,15 @@ void automatyka()
      }
         
      
-    //Klima
-   // int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
-   // int temperatura = dht.getTemperature(); //Pobranie informacji o temperaturze
-
+    //AC
+    if (temperatura > 20)
+    {
+        digitalWrite(K3, HIGH);
+        
+    }
+  
     //Brama
-    unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
-    distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
-    limit_sensor = analogRead(A1);
-
-     if (distance < 10 && limit_sensor < 1000)
+    if (distance < 10 && limit_sensor < 1000)
      {
          digitalWrite(K2, HIGH);
          Serial1.println("Trwa otwieranie bramy");
@@ -139,7 +149,7 @@ void automatyka()
     else if(distance > 15 && limit_sensor > 1003) //Zmiana obrotów silnika!!!!!!!!!!!!!!
      {   
          digitalWrite(K2, LOW);
-         Serial1.println("UWAGA! Trwa zamykanie bramy")
+         Serial1.println("UWAGA! Trwa zamykanie bramy");
          miganie(K3);
      }
 }
@@ -160,8 +170,8 @@ void reczne()
     case 'e': digitalWrite(K3, LOW); break;
     case 'f': digitalWrite(K3, HIGH); break;
     
-    case 'g': digitalWrite(K4, LOW); break;
-    case 'h': digitalWrite(K4, HIGH); break;
+   // case 'g': digitalWrite(K4, LOW); break;
+   // case 'h': digitalWrite(K4, HIGH); break;
     
     case 'i': digitalWrite(K5, LOW); break;
     case 'j': digitalWrite(K5, HIGH); break;
