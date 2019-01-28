@@ -1,0 +1,12 @@
+Mikrokontroler http://image.dfrobot.com/image/data/DFR0201/atmega32u4%20datasheet.pdf
+Płytka https://www.dfrobot.com/wiki/index.php/DFRobot_Leonardo_with_Xbee_R3(SKU:DFR0221)
+Moduł przekaźników https://abc-rc.pl/product-pol-8598-Modul-8-przekaznikow-5V-10A-250V-Arduino.html
+Moduł bluetooth HC-06 https://botland.com.pl/pl/moduly-bluetooth/6818-modul-bluetooth-hc-06-zs-040.html?search_query=bluetooth+&results=439
+
+Czujniki:
+  Fotorezystor został połączony z dzielnikiem napięcia o rezystancji o wartości 760 [Ω], za nim zostały wyprowadzone dwa przewody, jeden został wpięty do GND, a drugi do analogowego wejścia A0 
+    GL5528 10-20 [kΩ] 100mW https://botland.com.pl/pl/fotorezystory/4598-fotorezystor-10-20k-gl5528.html
+  Czujnik temperatury i wilgotności DHT11
+    https://botland.com.pl/pl/czujniki-temperatury/9301-czujnik-temperatury-i-wilgotnosci-dht11-60c.html
+  Czujnik ultradźwiękowy HC-SR04
+    https://botland.com.pl/pl/ultradzwiekowe-czujniki-odleglosci/1420-ultradzwiekowy-czujnik-odleglosci-hc-sr04-2-200cm.html?search_query=hc+sr04&results=23    
