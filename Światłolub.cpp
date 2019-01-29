@@ -1,13 +1,55 @@
-#include <SoftwareSerial.h>
-SoftwareSerial mySerial(1, 0); // RX, TX
+#define enA 9
+#define in1 2
+#define in2 3   
+#define in3 4
+#define in4 5
+#define enB 10
 
-const int lewa = 5;
-const int prawa = 4;
+class Motor{
+
+int enablePin;
+int directionPin1;
+int directionPin2;
+public:
+ 
+//Method to define the motor pins
+Motor(int ENPin,int dPin1,int dPin2){
+enablePin = ENPin;
+directionPin1 = dPin1;
+directionPin2 = dPin2;
+};
+ 
+//Method to drive the motor 0~255 driving forward. -1~-255 driving backward
+Drive(int speed){
+if(speed>=0){
+digitalWrite(directionPin1, LOW);
+digitalWrite(directionPin2, HIGH);
+}
+else{
+digitalWrite(directionPin1, HIGH);
+digitalWrite(directionPin2, LOW);
+speed = - speed;
+}
+analogWrite(enablePin, speed);
+}
+};
+Motor leftMotor = Motor(enA, in1, in2);
+Motor rightMotor = Motor(enB, in3, in4);
 void setup()
 {
-Serial1.begin(9600);
-pinMode(4, OUTPUT);
-pinMode(5, OUTPUT);
+pinMode(enA, OUTPUT);
+pinMode(in1, OUTPUT);
+pinMode(in2, OUTPUT);
+pinMode(enB, OUTPUT);
+pinMode(in3, OUTPUT);
+pinMode(in4, OUTPUT);
+// Set initial direction and speed
+digitalWrite(enA, LOW);
+digitalWrite(enB, LOW);
+digitalWrite(in1, LOW);
+digitalWrite(in2, HIGH);
+digitalWrite(in3, LOW);
+digitalWrite(in4, HIGH);
 }
 
 
@@ -17,33 +59,26 @@ void loop()
   int pomiarp = analogRead(A0);
   int pomiarl = analogRead(A1);
 
-    Serial1.println("Prawy:");
-    Serial1.println(pomiarp);
-    Serial1.println("Lewy:");
-    Serial1.println(pomiarl);
-
     int roznica = pomiarp - pomiarl;
     
     if (roznica < -100)
     {
-        digitalWrite(lewa, HIGH);
-    }
+        leftMotor.Drive(100);
+        rightMotor.Drive(-100);
+     }
     else if (roznica > 100)
     {
-        digitalWrite(prawa, HIGH);
+        leftMotor.Drive(-100);
+        rightMotor.Drive(100);      
     }
     else if (-200 < roznica < 200 && pomiarp > 50 && pomiarl > 50)
     {
-        digitalWrite(lewa, HIGH);
-        digitalWrite(prawa, HIGH);
+        leftMotor.Drive(100);
+        rightMotor.Drive(100);
     }
     else 
     {
-        digitalWrite(lewa, LOW);
-        digitalWrite(prawa, LOW);
+        leftMotor.Drive(0);
+        rightMotor.Drive(0);
     }
-    
-
-    
-    delay(300);
 }
