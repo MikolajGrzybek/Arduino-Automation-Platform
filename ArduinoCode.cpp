@@ -14,10 +14,10 @@
 SoftwareSerial mySerial(1, 0); // RX, TX
 
 //cewka K1...K8, której sterowanie wpięte jest do wyjścia cyfrowego arduino nr.: 3...10
-const int K1=3; //lampa
-const int K2=4; //klimatyzacja
-const int K7=9; //brama
-const int K8=10; //brama
+const int K1=2; //lampa
+const int K2=3; //klimatyzacja
+const int K7=8; //brama
+const int K8=9; //brama
 
 //czujniki cyfrowe S1...S4 wpięte do wejść cryfowycj arduino nr.:2, 11...13
 #define ONE_WIRE_BUS 2
@@ -60,8 +60,8 @@ void setup()
   pinMode(K2, OUTPUT);
   pinMode(K7, OUTPUT);
   pinMode(K8, OUTPUT);
+  pinMode(4, INPUT);
   pinMode(5, INPUT);
-  pinMode(6, INPUT);
   
   //Zainicjowanie komunikacji poprzez bluetooth na portach RX TX (0,1)
   Serial.begin(9600);
@@ -150,8 +150,8 @@ void automatyka()
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych 
     
     //Stan krańcówek
-    S1 = digitalRead(5);
-    S2 = digitalRead(6);
+    S1 = digitalRead(4);
+    S2 = digitalRead(5);
     //Odległość
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
@@ -178,14 +178,14 @@ void automatyka()
     //Automatyczne wykonanie aktywności na podstawie pomiarów z czujników
 
     //Lampa
-    if (light_intensity < 15) //DLACZEGO 700????? Rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
+    if (light_intensity < 15) //DLACZEGO 15????? Rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
      {
-         digitalWrite(K1, HIGH);
+         digitalWrite(K1, LOW);
          Serial.println("Zaświecono lampę");
      }
      else
      {
-         digitalWrite(K1, LOW);
+         digitalWrite(K1, HIGH);
          Serial.println("Zgaszono lampę");   
      }
         
@@ -193,11 +193,11 @@ void automatyka()
    // AC
     if (tempDeviceAddress > 23)
     {
-        digitalWrite(K2, HIGH);
+        digitalWrite(K2, LOW);
     }
     else 
     {
-        digitalWrite(K2, LOW);
+        digitalWrite(K2, HIGH);
     }
   
     //Brama
@@ -209,9 +209,9 @@ void automatyka()
         }       
     } 
 
-    if(distance > 10) //Jeśli czujnik nie wykryje żadnego obiektu w odległości do 10cm to ...
+    if(distance > 10 && S2 = HIGH) //Jeśli czujnik nie wykryje żadnego obiektu w odległości do 10cm to ...
     {
-       delay(5000); // ... Poczekaj 5 sekund dla bezpieczeństwa, w wypadku gdyby ktoś znalazł się w zasięgu bramy ...
+       // ... Poczekaj 5 sekund dla bezpieczeństwa, w wypadku gdyby ktoś znalazł się w zasięgu bramy ...
 
        while(S1 = LOW) // ... Dopóki brama nie jest całkowicie zamknięta ...
         {
