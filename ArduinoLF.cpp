@@ -55,7 +55,7 @@ digitalWrite(in4, HIGH);
 void loop()
 {
   int pomiarp = analogRead(A0);
-  int pomiarl = analogRead(A1);
+  int pomiarl = analogRead(A5);
 
     int roznica = pomiarp - pomiarl;
     

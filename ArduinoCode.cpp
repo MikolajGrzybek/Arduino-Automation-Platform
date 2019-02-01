@@ -14,15 +14,15 @@
 SoftwareSerial mySerial(1, 0); // RX, TX
 
 //cewka K1...K8, której sterowanie wpięte jest do wyjścia cyfrowego arduino nr.: 3...10
-const int K1=2; //lampa
-const int K2=3; //klimatyzacja
+const int K1=3; //lampa
+const int K2=4; //klimatyzacja
 const int K7=8; //brama
 const int K8=9; //brama
 
 //czujniki cyfrowe S1...S4 wpięte do wejść cryfowycj arduino nr.:2, 11...13
 #define ONE_WIRE_BUS 2
-const int Trig=12; //Czujnik ultradźwiękowy HC-SR04 pin trig
-const int Echo=13; //Czujnik ultradźwiękowy HC-SR04 pin echo
+const int Trig=10; //Czujnik ultradźwiękowy HC-SR04 pin trig
+const int Echo=11; //Czujnik ultradźwiękowy HC-SR04 pin echo
     
 //czujniki analogowe SA1...SA6 wpiętę do wejść analogowych arduino nr.: A0...A5const int SA1=A0; //Czujnik natężenia światła PT550
 const int SA1=A0; //Czujnik światła (fotorezystor)
@@ -150,8 +150,8 @@ void automatyka()
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych 
     
     //Stan krańcówek
-    S1 = digitalRead(4);
-    S2 = digitalRead(5);
+    S1 = digitalRead(5);
+    S2 = digitalRead(6);
     //Odległość
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
@@ -209,7 +209,7 @@ void automatyka()
         }       
     } 
 
-    if(distance > 10 && S2 = HIGH) //Jeśli czujnik nie wykryje żadnego obiektu w odległości do 10cm to ...
+    if(distance > 10 && S2 == HIGH) //Jeśli czujnik nie wykryje żadnego obiektu w odległości do 10cm to ...
     {
        // ... Poczekaj 5 sekund dla bezpieczeństwa, w wypadku gdyby ktoś znalazł się w zasięgu bramy ...
 
