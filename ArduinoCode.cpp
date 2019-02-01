@@ -7,9 +7,8 @@
 #include <SoftwareSerial.h>
 #include <NewPing.h>
 #include <DHT.h>
-
-//Zadeklarrowanie zmiennej wymaganej przez bibliotekę DHT.h
-#define DHT11_PIN 6
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 //Zdefiniowanie pinów RX i TX
 SoftwareSerial mySerial(1, 0); // RX, TX
@@ -17,15 +16,11 @@ SoftwareSerial mySerial(1, 0); // RX, TX
 //cewka K1...K8, której sterowanie wpięte jest do wyjścia cyfrowego arduino nr.: 3...10
 const int K1=3; //lampa
 const int K2=4; //klimatyzacja
-const int K3=5; 
-//const int K4=6;
-//const int K5=7;
-//const int K6=8;
 const int K7=9; //brama
 const int K8=10; //brama
 
 //czujniki cyfrowe S1...S4 wpięte do wejść cryfowycj arduino nr.:2, 11...13
-const int DHT11_PIN=2; //Czujnik temperatury i wilgotności DHT11
+#define ONE_WIRE_BUS 2
 const int Trig=12; //Czujnik ultradźwiękowy HC-SR04 pin trig
 const int Echo=13; //Czujnik ultradźwiękowy HC-SR04 pin echo
     
@@ -44,8 +39,12 @@ int light_intensity=0;
 NewPing sonar(Trig, Echo, Max_Distance); 
 int distance=0;
 
-//Konfiguracja czujnika temperatury i wilgotności DHT11
-DHT dht;
+//Ustawienie rozdzielczości działa termometru na 9 bitów. (możliwe od 9 do 12 bit)
+ #define TEMPERATURE_PRECISION 9 
+ OneWire oneWire(ONE_WIRE_BUS); //Zainicjowanie komunikacji po interfejsie onewire, na którym działa czujnik
+ DallasTemperature sensors(&oneWire); //Funkcja z bibliotekki producenta, która wykrywa czujnik na interfejsie onewire
+ DeviceAddress tempDeviceAddress; //Zmienna opisująca adres czujnika na tym interfejsie, adres ma 48 bitów długości
+ int numberOfDevices; //Liczba znalezionych urządzeń na interfejsie onewire 
 
 //zdefiniowanie zmiennej, która jest wysyłana poprzez bluetooth
 int state;
@@ -59,20 +58,55 @@ void setup()
   //zdefiniowanie portów jako wyjścia i wejścia cyfrowe        
   pinMode(K1, OUTPUT); 
   pinMode(K2, OUTPUT);
-  pinMode(K3, OUTPUT);
-  //pinMode(K4, OUTPUT);
-  //pinMode(K5, OUTPUT);
-  //pinMode(K6, OUTPUT);
   pinMode(K7, OUTPUT);
   pinMode(K8, OUTPUT);
-  pinMode(7, INPUT);
-  pinMode(8, INPUT);
+  pinMode(5, INPUT);
+  pinMode(6, INPUT);
   
   //Zainicjowanie komunikacji poprzez bluetooth na portach RX TX (0,1)
-  Serial1.begin(9600);
+  Serial.begin(9600);
   
-  //Konfiguracja czujnika przy użyciu biblioteki DHT.h
-  dht.setup(DHT11_PIN);
+  //Załączenie biblioteki obsługującej czujnik temperatury
+  sensors.begin();
+
+  //Funkcja zlicza urządzenia podłączone na interfejsie onewire
+  numberOfDevices = sensors.getDeviceCount();
+  
+  //Wyszukiwanie termometru
+  Serial.print("Szukanie urządzeń na OneWire...");
+  Serial.print("Znaleziono "); 
+  Serial.print(numberOfDevices, DEC);
+  Serial.println(" urządzeń.");
+
+   //Informacja o wybranym trybie zasilania termometru
+  Serial.print("Zasilanie poprzez OneWire jest: "); 
+  if (sensors.isParasitePowerMode()) Serial.println("ON");
+  else Serial.println("OFF");
+
+  //Przeszukaj interfejs w poszukiwaniu adresów urządzeń
+  for(int i=0;i<numberOfDevices; i++)
+  {
+    if(sensors.getAddress(tempDeviceAddress, i))
+  {
+    Serial.print("Znaleziono urządzenia ");
+    Serial.print(i, DEC);
+    Serial.print(" z adresem: ");
+    printAddress(tempDeviceAddress);
+    Serial.println();
+    
+    Serial.print("Ustawianie rozdzielczości na ");
+    Serial.println(TEMPERATURE_PRECISION, DEC);
+    sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
+    
+     Serial.print("Ustawiona rozdzielczość to: ");
+    Serial.print(sensors.getResolution(tempDeviceAddress), DEC); 
+    Serial.println();
+  }else{
+    Serial.print("Found ghost device at ");
+    Serial.print(i, DEC);
+    Serial.print(" but could not detect address. Check power and cabling");
+  }
+  }
  
   //Domyślne ustawienie trybu sterowania na automatyczny
   sterowanie = true;
@@ -82,7 +116,7 @@ void setup()
 void loop() 
 {
   //Odczyt danych z bluetooth i zapisanie do zmiennej 'state'
-  state = Serial1.read();
+  state = Serial.read();
  
   //Wybór trybu pracy
   if(state == '1') //Jeśli zostanie wysłana '1' urządzenie przejdzie w tryb automatyczny
@@ -116,38 +150,54 @@ void automatyka()
     //Dokonanie odczytu z czujników, zapis wartości do zmiennych 
     
     //Stan krańcówek
-    S1 = digitalRead(7);
-    S2 = digitalRead(8);
+    S1 = digitalRead(5);
+    S2 = digitalRead(6);
     //Odległość
     unsigned int uS = sonar.ping(); //Odczyt z czujnika ultradźwiękowego HC-SR04  
     distance = uS / US_ROUNDTRIP_CM; //Przetworzenie dostarczonego sygnały na odległość w [cm]
     //Światło
     light_intensity = analogRead(A0); //Odczyt natężenia światła z fotorezystora wpiętego do A0
     //temperatura 
-    int wilgotnosc = dht.getHumidity(); //Pobranie informacji o wilgotnosci
-    int temperatura = dht.getTemperature(); //Pobranie informacji o temperaturze
+    sensors.requestTemperatures(); // Send the command to get temperatures
+    for(int i=0;i<numberOfDevices; i++)
+     {
+        // Search the wire for address
+        if(sensors.getAddress(tempDeviceAddress, i))
+      {
+        // Output the device ID
+      //  Serial.print("Temperature for device: ");
+      //  Serial.println(i,DEC);
+    
+        // It responds almost immediately. Let's print out the data
+       // printTemperature(tempDeviceAddress); // Use a simple function to print out the data
+      } 
+      //else ghost device! Check your power requirements and cabling  
+    }
 
 
     //Automatyczne wykonanie aktywności na podstawie pomiarów z czujników
 
     //Lampa
-    if (light_intensity < 700) //DLACZEGO 700????? Rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
+    if (light_intensity < 15) //DLACZEGO 700????? Rozdzielczość na pinach analogowych w arduino wynosi 10 bitów, co znaczy że będziemy odbierać na nich liczby w zakresie <0, 1023> gdzie 0=0V a 1023=5V
      {
          digitalWrite(K1, HIGH);
-         Serial1.println("Zaświecono lampę");
+         Serial.println("Zaświecono lampę");
      }
      else
      {
          digitalWrite(K1, LOW);
-         Serial1.println("Zgaszono lampę");   
+         Serial.println("Zgaszono lampę");   
      }
         
      
-    //AC
-    if (temperatura > 20)
+   // AC
+    if (tempDeviceAddress > 23)
     {
         digitalWrite(K2, HIGH);
-        
+    }
+    else 
+    {
+        digitalWrite(K2, LOW);
     }
   
     //Brama
@@ -185,8 +235,8 @@ void reczne()
     case 'c': digitalWrite(K2, LOW); break; // Załącz cewkę K2
     case 'd': digitalWrite(K2, HIGH); break; // Wyłącz cewkę K2
     
-    case 'e': digitalWrite(K3, LOW); break; // Załącz cewkę K3
-    case 'f': digitalWrite(K3, HIGH); break; // Wyłącz cewkę K3
+ //   case 'e': digitalWrite(K3, LOW); break; // Załącz cewkę K3
+ //   case 'f': digitalWrite(K3, HIGH); break; // Wyłącz cewkę K3
     
    // case 'g': digitalWrite(K4, LOW); break;
    // case 'h': digitalWrite(K4, HIGH); break;
@@ -226,4 +276,30 @@ void prawo()
 //PRAWO
     digitalWrite(K7, HIGH);
     digitalWrite(K8, LOW);
+}
+
+// function to print the temperature for a device
+void printTemperature(DeviceAddress deviceAddress)
+{
+  // method 1 - slower
+  //Serial.print("Temp C: ");
+  //Serial.print(sensors.getTempC(deviceAddress));
+  //Serial.print(" Temp F: ");
+  //Serial.print(sensors.getTempF(deviceAddress)); // Makes a second call to getTempC and then converts to Fahrenheit
+
+  // method 2 - faster
+  float tempC = sensors.getTempC(deviceAddress);
+  Serial.print("Temp C: ");
+  Serial.print(tempC);
+  Serial.print(" Temp F: ");
+  Serial.println(DallasTemperature::toFahrenheit(tempC)); // Converts tempC to Fahrenheit
+}
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
 }
